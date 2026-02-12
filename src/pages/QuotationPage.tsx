@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, FileDown, Share2, Save, Eye, Pencil } from 'lucide-react';
+import { Plus, Trash2, FileDown, Share2, Save, Eye, Pencil, ImagePlus, X } from 'lucide-react';
 
 interface QuotationItem {
   id: string;
@@ -13,6 +13,7 @@ interface QuotationItem {
   finish: string;
   qty: number;
   unitPrice: number;
+  image: string | null;
 }
 
 interface Category {
@@ -33,7 +34,7 @@ const QuotationPage = () => {
     {
       id: '1',
       name: 'Main Flooring',
-      items: [{ id: '1-1', company: 'Kajaria', design: 'Classic Marble', finish: '600x600mm', qty: 100, unitPrice: 85 }],
+      items: [{ id: '1-1', company: 'Kajaria', design: 'Classic Marble', finish: '600x600mm', qty: 100, unitPrice: 85, image: null }],
     },
   ]);
   const [showPreview, setShowPreview] = useState(false);
@@ -46,12 +47,12 @@ const QuotationPage = () => {
   const addItem = (catId: string) => {
     setCategories(categories.map(c =>
       c.id === catId
-        ? { ...c, items: [...c.items, { id: `${catId}-${Date.now()}`, company: '', design: '', finish: '', qty: 0, unitPrice: 0 }] }
+        ? { ...c, items: [...c.items, { id: `${catId}-${Date.now()}`, company: '', design: '', finish: '', qty: 0, unitPrice: 0, image: null }] }
         : c
     ));
   };
 
-  const updateItem = (catId: string, itemId: string, field: keyof QuotationItem, value: string | number) => {
+  const updateItem = (catId: string, itemId: string, field: keyof QuotationItem, value: string | number | null) => {
     setCategories(categories.map(c =>
       c.id === catId
         ? { ...c, items: c.items.map(i => i.id === itemId ? { ...i, [field]: value } : i) }
@@ -131,7 +132,8 @@ const QuotationPage = () => {
                 <div className="overflow-x-auto">
                   <table className="data-table">
                     <thead>
-                      <tr>
+                       <tr>
+                        <th>Image</th>
                         <th>Company</th>
                         <th>Design</th>
                         <th>Finish / Size</th>
@@ -144,6 +146,35 @@ const QuotationPage = () => {
                     <tbody>
                       {cat.items.map(item => (
                         <tr key={item.id}>
+                          <td>
+                            {item.image ? (
+                              <div className="relative w-12 h-12 group">
+                                <img src={item.image} alt="Design" className="w-12 h-12 rounded object-cover border border-border" />
+                                <button
+                                  onClick={() => updateItem(cat.id, item.id, 'image', null)}
+                                  className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <label className="w-12 h-12 rounded border border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary hover:bg-accent transition-colors">
+                                <ImagePlus className="w-4 h-4 text-muted-foreground" />
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const url = URL.createObjectURL(file);
+                                      updateItem(cat.id, item.id, 'image', url);
+                                    }
+                                  }}
+                                />
+                              </label>
+                            )}
+                          </td>
                           <td>
                             <Select value={item.company} onValueChange={v => updateItem(cat.id, item.id, 'company', v)}>
                               <SelectTrigger className="h-8 text-xs w-28"><SelectValue placeholder="Select" /></SelectTrigger>
@@ -214,8 +245,9 @@ const QuotationPage = () => {
                 <div key={cat.id} className="mb-3">
                   <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-1">{cat.name}</h4>
                   {cat.items.map(item => (
-                    <div key={item.id} className="flex justify-between text-xs py-0.5 border-b border-dashed">
-                      <span>{item.design || 'Item'} ({item.finish})</span>
+                    <div key={item.id} className="flex items-center gap-2 text-xs py-1 border-b border-dashed">
+                      {item.image && <img src={item.image} alt="" className="w-6 h-6 rounded object-cover" />}
+                      <span className="flex-1">{item.design || 'Item'} ({item.finish})</span>
                       <span>₹{(item.qty * item.unitPrice).toLocaleString()}</span>
                     </div>
                   ))}
